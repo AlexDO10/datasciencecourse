@@ -1,31 +1,30 @@
 #!/usr/bin/env python
 """
-Plot 2: Time series of Global Active Power
-This script reads household power consumption data and creates a time series plot
-of the Global Active Power for February 1-2, 2007.
+Plot 2: Have total Baltimore City PM2.5 emissions decreased from 1999 to 2008?
+Bar chart of total emissions for Baltimore City (fips == "24510").
 """
 
+import pyreadr
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Read the data
-df = pd.read_csv("ExploratoryDataAnalysis/household_power_consumption.txt", sep=";")
+# Read data
+NEI = pyreadr.read_r("ExploratoryDataAnalysis/summarySCC_PM25.rds")[None]
+NEI["Emissions"] = pd.to_numeric(NEI["Emissions"], errors="coerce")
+NEI["year"] = NEI["year"].astype(int)
 
-# Filter for the two days
-filteredDf = df[df["Date"].isin(["1/2/2007", "2/2/2007"])]
+# Filter Baltimore City
+baltimore = NEI[NEI["fips"] == "24510"]
+baltimore_by_year = baltimore.groupby("year")["Emissions"].sum()
 
-# Create DateTime column
-filteredDf["DateTime"] = pd.to_datetime(filteredDf["Date"] + " " + filteredDf["Time"], format="%d/%m/%Y %H:%M:%S")
-
-# Create the plot
-plt.figure(figsize=(480/100, 480/100), dpi=100)
-plt.plot(filteredDf['DateTime'], filteredDf['Global_active_power'], linewidth=0.5)
-plt.xlabel('datetime')
-plt.ylabel('Global Active Power (kilowatts)')
-plt.title('Global Active Power')
-plt.xticks(rotation=45)
+fig, ax = plt.subplots(figsize=(480/100, 480/100), dpi=100)
+ax.bar(baltimore_by_year.index.astype(str), baltimore_by_year.values, color="tomato", width=0.5)
+ax.set_xlabel("Year")
+ax.set_ylabel("Total PM2.5 Emissions (tons)")
+ax.set_title("Total PM2.5 Emissions — Baltimore City, MD (1999–2008)")
+for i, (yr, val) in enumerate(baltimore_by_year.items()):
+    ax.text(i, val + 20, f"{val:.0f}", ha="center", fontsize=9)
 plt.tight_layout()
-plt.savefig('plot2.png', dpi=100, bbox_inches='tight')
+plt.savefig("plot2.png", dpi=100, bbox_inches="tight")
 plt.close()
-
 print("Plot 2 saved as plot2.png")

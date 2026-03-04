@@ -1,34 +1,34 @@
 #!/usr/bin/env python
 """
-Plot 3: Time series of Energy sub metering
-This script reads household power consumption data and creates a multi-line time series plot
-of the three sub-metering values for February 1-2, 2007.
+Plot 3: Which source types in Baltimore City increased/decreased from 1999–2008?
+Line chart per source type (POINT, NONPOINT, ON-ROAD, NON-ROAD) for Baltimore City.
 """
 
+import pyreadr
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Read the data
-df = pd.read_csv("ExploratoryDataAnalysis/household_power_consumption.txt", sep=";")
+# Read data
+NEI = pyreadr.read_r("ExploratoryDataAnalysis/summarySCC_PM25.rds")[None]
+NEI["Emissions"] = pd.to_numeric(NEI["Emissions"], errors="coerce")
+NEI["year"] = NEI["year"].astype(int)
 
-# Filter for the two days
-filteredDf = df[df["Date"].isin(["1/2/2007", "2/2/2007"])]
+# Filter Baltimore City, group by year and type
+baltimore = NEI[NEI["fips"] == "24510"]
+baltimore_type = baltimore.groupby(["year", "type"])["Emissions"].sum().reset_index()
 
-# Create DateTime column
-filteredDf["DateTime"] = pd.to_datetime(filteredDf["Date"] + " " + filteredDf["Time"], format="%d/%m/%Y %H:%M:%S")
+colors = {"POINT": "steelblue", "NONPOINT": "tomato", "ON-ROAD": "seagreen", "NON-ROAD": "goldenrod"}
 
-# Create the plot
-plt.figure(figsize=(480/100, 480/100), dpi=100)
-plt.plot(filteredDf['DateTime'], filteredDf['Sub_metering_1'], label='Sub_metering_1', linewidth=0.5)
-plt.plot(filteredDf['DateTime'], filteredDf['Sub_metering_2'], label='Sub_metering_2', color='red', linewidth=0.5)
-plt.plot(filteredDf['DateTime'], filteredDf['Sub_metering_3'], label='Sub_metering_3', color='blue', linewidth=0.5)
-plt.xlabel('datetime')
-plt.ylabel('Energy sub metering (kilowatts)')
-plt.title('Energy sub metering')
-plt.legend(loc='upper right')
-plt.xticks(rotation=45)
+fig, ax = plt.subplots(figsize=(480/100, 480/100), dpi=100)
+for source_type, group in baltimore_type.groupby("type"):
+    ax.plot(group["year"], group["Emissions"], marker="o",
+            label=source_type, color=colors.get(source_type))
+ax.set_xlabel("Year")
+ax.set_ylabel("PM2.5 Emissions (tons)")
+ax.set_title("PM2.5 Emissions by Source Type\nBaltimore City, MD (1999–2008)")
+ax.legend(title="Source Type")
+ax.set_xticks([1999, 2002, 2005, 2008])
 plt.tight_layout()
-plt.savefig('plot3.png', dpi=100, bbox_inches='tight')
+plt.savefig("plot3.png", dpi=100, bbox_inches="tight")
 plt.close()
-
 print("Plot 3 saved as plot3.png")
