@@ -1,0 +1,58 @@
+---
+title: "World's Most Visited Museums"
+author: "Alejandro Dominguez"
+date: "April 17, 2026"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(leaflet)
+```
+
+## Interactive Map of Iconic Museums Around the World
+
+Explore some of the most visited museums on the planet. Click on any marker for details including estimated annual visitors.
+
+```{r map}
+museums <- data.frame(
+  name = c(
+    "Louvre Museum", "National Museum of China", "Vatican Museums",
+    "Metropolitan Museum of Art", "British Museum",
+    "Tate Modern", "National Gallery (London)", "Hermitage Museum",
+    "Museo Nacional del Prado", "Rijksmuseum"
+  ),
+  lat = c(48.8606, 39.9055, 41.9065, 40.7794, 51.5194,
+          51.5076, 51.5089, 59.9398, 40.4138, 52.3600),
+  lng = c(2.3376, 116.3914, 12.4536, -73.9632, -0.1270,
+          -0.0994, -0.1283, 30.3146, -3.6921, 4.8852),
+  visitors = c("9.6M", "7.4M", "6.9M", "6.5M", "5.8M",
+                "5.9M", "5.7M", "4.2M", "3.2M", "2.7M"),
+  icon_color = c("red", "darkred", "orange", "blue", "darkblue",
+                 "purple", "cadetblue", "green", "beige", "darkgreen")
+)
+
+icons <- awesomeIcons(
+  icon = "university",
+  iconColor = "white",
+  markerColor = museums$icon_color,
+  library = "fa"
+)
+
+leaflet(museums, width = "100%") %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  setView(lng = 10, lat = 45, zoom = 3) %>%
+  addAwesomeMarkers(
+    ~lng, ~lat,
+    icon = icons,
+    popup = ~paste0(
+      "<strong>", name, "</strong><br/>",
+      "Annual visitors: ~", visitors
+    ),
+    label = ~name
+  )
+```
+
+---
+
+*Data sourced from publicly available museum attendance reports. Map created with [Leaflet](https://leafletjs.com/) for R.*
