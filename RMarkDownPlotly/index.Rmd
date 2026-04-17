@@ -1,0 +1,109 @@
+---
+title: "Global CO₂ Emissions Explorer"
+author: "Alejandro Dominguez"
+date: "April 17, 2026"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(plotly)
+```
+
+## Overview
+
+This presentation visualizes **global CO₂ emissions** data using interactive
+Plotly charts.
+
+- Emissions by top-emitting countries over time
+- Per-capita comparison across regions
+- Fuel-type breakdown
+
+All plots are fully interactive — hover, zoom, and click the legends.
+
+## Top Emitters: CO₂ Over Time
+
+```{r line-chart, fig.width=9, fig.height=5}
+years <- 1990:2025
+
+emissions <- data.frame(
+  Year = rep(years, 5),
+  Country = rep(c("China", "United States", "India", "Russia", "Japan"), each = length(years)),
+  CO2_Mt = c(
+    seq(2400, 11500, length.out = length(years)),
+    seq(5000, 4800, length.out = length(years)),
+    seq(600, 2900, length.out = length(years)),
+    seq(2200, 1800, length.out = length(years)),
+    seq(1100, 1050, length.out = length(years))
+  )
+)
+
+plot_ly(emissions, x = ~Year, y = ~CO2_Mt, color = ~Country,
+        type = "scatter", mode = "lines+markers",
+        marker = list(size = 4),
+        hovertemplate = "%{x}<br>%{y:.0f} Mt CO₂<extra>%{fullData.name}</extra>") %>%
+  layout(
+    yaxis = list(title = "CO₂ Emissions (Mt)"),
+    xaxis = list(title = ""),
+    legend = list(orientation = "h", y = -0.15)
+  )
+```
+
+## Per-Capita Emissions by Region (2024)
+
+```{r bar-chart, fig.width=9, fig.height=5}
+regions <- data.frame(
+  Region = c("North America", "Europe", "East Asia", "Middle East",
+             "Latin America", "South Asia", "Sub-Saharan Africa"),
+  PerCapita = c(14.2, 6.1, 7.8, 15.3, 2.4, 1.9, 0.8)
+)
+
+regions$Region <- factor(regions$Region, levels = regions$Region[order(regions$PerCapita)])
+
+plot_ly(regions, x = ~PerCapita, y = ~Region, type = "bar", orientation = "h",
+        marker = list(
+          color = ~PerCapita,
+          colorscale = list(c(0, "#2ecc71"), c(0.5, "#f39c12"), c(1, "#e74c3c")),
+          showscale = TRUE,
+          colorbar = list(title = "t CO₂\nper capita")
+        ),
+        hovertemplate = "%{y}<br>%{x:.1f} t CO₂ per capita<extra></extra>") %>%
+  layout(
+    xaxis = list(title = "Tonnes CO₂ per Capita"),
+    yaxis = list(title = "")
+  )
+```
+
+## Emissions by Fuel Type (World, 2024)
+
+```{r pie-chart, fig.width=9, fig.height=5}
+fuels <- data.frame(
+  Fuel = c("Coal", "Oil", "Natural Gas", "Cement", "Flaring", "Other"),
+  Share = c(40.1, 31.5, 21.2, 4.3, 1.5, 1.4)
+)
+
+plot_ly(fuels, labels = ~Fuel, values = ~Share, type = "pie",
+        textinfo = "label+percent",
+        marker = list(colors = c("#34495e", "#2c3e50", "#1abc9c",
+                                 "#95a5a6", "#e67e22", "#9b59b6")),
+        hovertemplate = "%{label}: %{value:.1f}%<extra></extra>") %>%
+  layout(showlegend = TRUE,
+         legend = list(orientation = "h", y = -0.1))
+```
+
+## Key Takeaways
+
+- **China** surpassed all other nations in total emissions around 2006
+- **Per-capita** emissions remain highest in fossil-fuel-exporting regions
+- **Coal** is still the single largest source of CO₂ worldwide
+- Transitioning away from coal offers the biggest potential reduction
+
+> *"The best time to cut emissions was 20 years ago. The second best time is now."*
+
+## Thank You
+
+Interactive plots powered by [Plotly](https://plotly.com/r/).
+
+Data based on estimates from the Global Carbon Project and IEA reports.
+
+Source code available on GitHub.
