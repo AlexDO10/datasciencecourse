@@ -23,20 +23,22 @@ A collection of projects and assignments from the **Data Science Specialization*
 ## Exploratory Data Analysis — Household Power Consumption
 
 ### Goal
+
 Examine how household energy usage varies over a **2-day period (February 1–2, 2007)** using the [UCI Household Power Consumption dataset](https://archive.ics.uci.edu/ml/datasets/Individual+household+electric+power+consumption).
 
 ### Dataset
+
 - **File:** `ExploratoryDataAnalysis/household_power_consumption.txt`
 - **Separator:** `;`
 - **Columns:** `Date`, `Time`, `Global_active_power`, `Global_reactive_power`, `Voltage`, `Global_intensity`, `Sub_metering_1`, `Sub_metering_2`, `Sub_metering_3`
 
 ### Plots
 
-| File | Description |
-|------|-------------|
-| `plot1.png` | Histogram of Global Active Power (kilowatts) |
-| `plot2.png` | Time series of Global Active Power over Thu–Sat |
-| `plot3.png` | Time series of energy sub metering (3 sub-meters) |
+| File        | Description                                                       |
+| ----------- | ----------------------------------------------------------------- |
+| `plot1.png` | Histogram of Global Active Power (kilowatts)                      |
+| `plot2.png` | Time series of Global Active Power over Thu–Sat                   |
+| `plot3.png` | Time series of energy sub metering (3 sub-meters)                 |
 | `plot4.png` | 2×2 subplots: Active Power, Voltage, Sub metering, Reactive Power |
 
 All plots are **480×480 pixels**. Each `.py` file fully reproduces its corresponding `.png`.
@@ -66,4 +68,5 @@ Cleaning and tidying the **Human Activity Recognition (HAR)** dataset. See [HARA
 ---
 
 ## Author
+
 **Alejandro Dominguez** — Coursera Data Science Specialization

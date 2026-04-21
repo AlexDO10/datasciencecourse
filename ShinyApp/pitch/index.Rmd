@@ -1,80 +1,64 @@
 ---
-title: "MPG Predictor — Shiny App Pitch"
+title: "Iris Flower Classifier — Shiny App Pitch"
 author: "Alejandro Dominguez"
 date: "April 17, 2026"
 output:
   ioslides_presentation:
     widescreen: true
-    smaller: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, comment = "")
+library(class)
 ```
 
-## The Problem
+## Why an Iris Classifier?
 
-Fuel efficiency matters — for your wallet and the planet.
+The **iris dataset** is a cornerstone of machine learning — 150 flowers, 3 species,
+4 measurements. But interacting with it in a console is not intuitive.
 
-But how do **weight, horsepower, cylinders, and transmission** actually affect a
-car's miles per gallon?
+**This Shiny app** lets anyone — even without R experience — classify a flower by
+simply moving sliders:
 
-**MPG Predictor** is a Shiny app that lets anyone explore this relationship
-interactively, with **zero** statistics knowledge required.
+- Adjust **sepal length, sepal width, petal length, and petal width**
+- Pick the **number of neighbors (k)** for the kNN algorithm
+- Get an **instant prediction** with confidence score and visual comparison
 
-> **Try it live:** [MPG Predictor on shinyapps.io](https://your-account.shinyapps.io/ShinyApp)
+## The Algorithm: k-Nearest Neighbors
 
-## The Model Behind the App
-
-We fit a **multiple linear regression** on the classic `mtcars` dataset (32 cars):
-
-```{r model, echo=TRUE}
-model <- lm(mpg ~ wt + hp + factor(cyl) + am, data = mtcars)
-round(coef(model), 3)
+```{r knn-demo}
+test_flower <- data.frame(Sepal.Length = 5.8, Sepal.Width = 3.0,
+                          Petal.Length = 4.0, Petal.Width = 1.2)
+pred <- knn(iris[,1:4], test_flower, iris$Species, k = 5, prob = TRUE)
+cat("Predicted species:", as.character(pred),
+    "\nConfidence:", round(attr(pred, "prob") * 100), "%")
 ```
 
-The model captures **`r paste0(round(summary(model)$r.squared * 100, 1), "%")`** of the variance in MPG (R² = `r round(summary(model)$r.squared, 3)`).
+The model computes Euclidean distances from the new flower to all `r nrow(iris)` training points, then takes a majority vote of the **k** closest neighbors.
 
-## How Accurate Is It?
+## How Separable Are the Species?
 
-```{r accuracy-plot, echo=FALSE, fig.height=4, fig.width=7, fig.align='center'}
+```{r species-plot, echo=FALSE, fig.height=4.2, fig.width=7, fig.align='center'}
 par(mar = c(4, 4, 2, 1))
-predicted <- predict(model)
-plot(mtcars$mpg, predicted,
-     xlab = "Actual MPG", ylab = "Predicted MPG",
-     main = "Predicted vs. Actual MPG", pch = 19, col = "#2980b9", cex = 1.3)
-abline(0, 1, col = "#e74c3c", lwd = 2, lty = 2)
+cols <- c(setosa = "#e74c3c", versicolor = "#3498db", virginica = "#2ecc71")
+plot(iris$Petal.Length, iris$Petal.Width, col = cols[iris$Species],
+     pch = 19, cex = 1.3, xlab = "Petal Length (cm)",
+     ylab = "Petal Width (cm)", main = "Iris Petal Dimensions by Species")
+legend("topleft", legend = names(cols), col = cols, pch = 19, pt.cex = 1.3)
 ```
 
-Points hug the 45° line — the model generalizes well across the dataset.
-RMSE = **`r round(sqrt(mean((mtcars$mpg - predicted)^2)), 2)`** MPG.
+Petal dimensions alone separate the three species well — **setosa** is clearly distinct, while **versicolor** and **virginica** overlap slightly.
 
-## App Features at a Glance
+## Try It Yourself
 
-| Feature | Details |
+| Feature | Description |
 |---|---|
-| **Weight slider** | 1.5 – 5.5 thousand lbs |
-| **Horsepower slider** | 50 – 350 hp |
-| **Cylinder selector** | Radio buttons: 4, 6, or 8 |
-| **Transmission picker** | Automatic / Manual dropdown |
-| **Live prediction** | Updates instantly as inputs change |
-| **Comparison plot** | Your car plotted against real mtcars data |
-| **Model details toggle** | Optional full regression summary |
+| **4 measurement sliders** | Sepal & petal length/width |
+| **k selector** | Tune model sensitivity (1–15) |
+| **Live prediction + confidence** | Updates instantly |
+| **Scatter plot** | Your flower plotted among 150 real flowers |
+| **Neighbors table** | See the k closest real flowers |
+| **Documentation tab** | Full instructions for new users |
 
-Built-in documentation is displayed directly in the sidebar — no external links needed.
-
-## Thank You — Try It Yourself!
-
-**GitHub repo:**
-[github.com/your-username/datasciencecourse/ShinyApp](https://github.com)
-
-**Live app:**
-[shinyapps.io link](https://your-account.shinyapps.io/ShinyApp)
-
-### Quick Start
-
-1. Move the **Weight** and **Horsepower** sliders
-2. Pick **Cylinders** and **Transmission**
-3. See your predicted MPG update in real time
-
-*Built with R `r getRversion()`, Shiny, and presented with R Markdown (ioslides).*
+**Live app:** [shinyapps.io/IrisClassifier](https://alexdo10.shinyapps.io/ShinyApp)
+&nbsp;|&nbsp; **Source code:** [GitHub](https://github.com/AlexDO10/datasciencecourse/tree/main/ShinyApp)
