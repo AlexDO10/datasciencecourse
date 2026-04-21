@@ -1,0 +1,175 @@
+---
+title: "Impact of Severe Weather Events on Public Health and the Economy in the United States"
+author: "Alejandro Dominguez"
+date: "April 17, 2026"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, cache = TRUE)
+```
+
+## Synopsis
+
+This report analyzes the U.S. National Oceanic and Atmospheric Administration's
+(NOAA) storm database to determine which types of severe weather events are most
+harmful to population health and which have the greatest economic consequences.
+The dataset spans from 1950 to November 2011 and contains 902,297 records.
+To assess public health impact, we aggregate fatalities and injuries by event
+type. For economic impact, we compute total property and crop damage in dollars
+by converting the damage exponent codes (K, M, B) to their numeric multipliers.
+Our analysis reveals that **tornadoes** are by far the most dangerous event for
+population health, causing the most fatalities and injuries combined. In terms
+of economic damage, **floods** cause the greatest total property and crop losses,
+followed by hurricanes/typhoons and tornadoes. These findings can help emergency
+managers prioritize resources for the most destructive event categories.
+
+## Data Processing
+
+We load the raw compressed data file directly (`.csv.bz2`) and select only the
+columns relevant to our two research questions.
+
+```{r load-data}
+storm <- read.csv("StormData.csv.bz2")
+dim(storm)
+```
+
+The dataset contains `r nrow(storm)` observations and `r ncol(storm)` variables.
+We keep only the columns needed for our analysis: event type, fatalities,
+injuries, property damage, and crop damage.
+
+```{r subset}
+cols <- c("EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP",
+          "CROPDMG", "CROPDMGEXP")
+storm <- storm[, cols]
+str(storm)
+```
+
+### Processing Economic Damage
+
+The property and crop damage values are split across two columns each: a numeric
+value (`PROPDMG`, `CROPDMG`) and an exponent code (`PROPDMGEXP`, `CROPDMGEXP`).
+The exponent codes represent multipliers: **K** = thousands, **M** = millions,
+**B** = billions. We convert these to full dollar amounts.
+
+```{r damage-multiplier}
+get_multiplier <- function(exp) {
+    exp <- toupper(exp)
+    mult <- rep(1, length(exp))
+    mult[exp == "K"] <- 1e3
+    mult[exp == "M"] <- 1e6
+    mult[exp == "B"] <- 1e9
+    mult[exp == "H"] <- 1e2
+    mult[exp %in% as.character(0:9)] <- 10^as.numeric(exp[exp %in% as.character(0:9)])
+    mult
+}
+
+storm$PROP_TOTAL <- storm$PROPDMG * get_multiplier(storm$PROPDMGEXP)
+storm$CROP_TOTAL <- storm$CROPDMG * get_multiplier(storm$CROPDMGEXP)
+storm$ECON_TOTAL <- storm$PROP_TOTAL + storm$CROP_TOTAL
+```
+
+### Aggregating by Event Type
+
+We aggregate fatalities, injuries, and economic damage by event type.
+
+```{r aggregate}
+health <- aggregate(cbind(FATALITIES, INJURIES) ~ EVTYPE, data = storm, sum)
+health$HEALTH_TOTAL <- health$FATALITIES + health$INJURIES
+health <- health[order(-health$HEALTH_TOTAL), ]
+
+econ <- aggregate(cbind(PROP_TOTAL, CROP_TOTAL, ECON_TOTAL) ~ EVTYPE,
+                  data = storm, sum)
+econ <- econ[order(-econ$ECON_TOTAL), ]
+```
+
+## Results
+
+### Which types of events are most harmful to population health?
+
+We examine the top 10 event types by combined fatalities and injuries.
+
+```{r health-table}
+top_health <- head(health, 10)
+top_health[, c("EVTYPE", "FATALITIES", "INJURIES", "HEALTH_TOTAL")]
+```
+
+**Figure 1** shows the top 10 weather event types by total health impact
+(fatalities + injuries). Tornadoes dominate overwhelmingly, causing over five
+times more harm than the next event type.
+
+```{r figure1, fig.width=10, fig.height=6, fig.cap="Figure 1: Top 10 weather events most harmful to population health (1950–2011)."}
+par(mar = c(8, 6, 3, 1))
+colors <- c("#e74c3c", rep("#3498db", 9))
+bp <- barplot(top_health$HEALTH_TOTAL,
+              names.arg = top_health$EVTYPE,
+              las = 2, col = colors, border = NA,
+              main = "Top 10 Weather Events Most Harmful to Population Health",
+              ylab = "Total Fatalities + Injuries")
+text(bp, top_health$HEALTH_TOTAL, labels = format(top_health$HEALTH_TOTAL, big.mark = ","),
+     pos = 3, cex = 0.8)
+```
+
+To understand the breakdown between fatalities and injuries, **Figure 2** shows
+both components side by side for the top 10 events.
+
+```{r figure2, fig.width=10, fig.height=6, fig.cap="Figure 2: Fatalities vs. injuries for the top 10 most harmful weather events."}
+par(mar = c(8, 6, 3, 6))
+mat <- t(as.matrix(top_health[, c("FATALITIES", "INJURIES")]))
+colnames(mat) <- top_health$EVTYPE
+barplot(mat, beside = TRUE, las = 2, col = c("#e74c3c", "#f39c12"), border = NA,
+        main = "Fatalities vs. Injuries by Weather Event Type",
+        ylab = "Count")
+legend("topright", legend = c("Fatalities", "Injuries"),
+       fill = c("#e74c3c", "#f39c12"), border = NA)
+```
+
+Tornadoes cause the most injuries by a wide margin. Excessive heat ranks second
+for fatalities specifically, highlighting that lethal events are not always the
+ones causing the most injuries.
+
+### Which types of events have the greatest economic consequences?
+
+We examine the top 10 event types by total economic damage (property + crop).
+
+```{r econ-table}
+top_econ <- head(econ, 10)
+top_econ$PROP_BILLIONS <- round(top_econ$PROP_TOTAL / 1e9, 2)
+top_econ$CROP_BILLIONS <- round(top_econ$CROP_TOTAL / 1e9, 2)
+top_econ$TOTAL_BILLIONS <- round(top_econ$ECON_TOTAL / 1e9, 2)
+top_econ[, c("EVTYPE", "PROP_BILLIONS", "CROP_BILLIONS", "TOTAL_BILLIONS")]
+```
+
+**Figure 3** shows the top 10 event types by total economic damage, split into
+property and crop components.
+
+```{r figure3, fig.width=10, fig.height=6, fig.cap="Figure 3: Top 10 weather events with the greatest economic consequences (1950–2011). Damage in billions of USD."}
+par(mar = c(8, 6, 3, 6))
+mat_econ <- t(as.matrix(top_econ[, c("PROP_TOTAL", "CROP_TOTAL")])) / 1e9
+colnames(mat_econ) <- top_econ$EVTYPE
+barplot(mat_econ, beside = FALSE, las = 2, col = c("#2980b9", "#2ecc71"), border = NA,
+        main = "Top 10 Weather Events by Economic Damage",
+        ylab = "Total Damage (Billions USD)")
+legend("topright", legend = c("Property Damage", "Crop Damage"),
+       fill = c("#2980b9", "#2ecc71"), border = NA)
+```
+
+Floods cause the greatest total economic damage at over $150 billion,
+predominantly from property losses. Hurricanes/typhoons rank second, also
+driven mainly by property damage. Drought, while not among the top property
+damage events, causes substantial crop losses.
+
+### Summary of Key Findings
+
+| Rank | Most Harmful to Health | Greatest Economic Damage |
+|------|------------------------|--------------------------|
+| 1 | Tornado | Flood |
+| 2 | Excessive Heat | Hurricane/Typhoon |
+| 3 | TSTM Wind | Tornado |
+| 4 | Flood | Storm Surge |
+| 5 | Lightning | Hail |
+
+Tornadoes are the most dangerous weather events for population health, while
+floods impose the heaviest economic burden. Decision-makers should prioritize
+tornado preparedness for life safety and flood mitigation for economic
+protection.
